@@ -12,436 +12,508 @@ screenGui.Name = "JIGGY_HITBOX"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = CoreGui
 
+-- SOUNDS
+local function makeSound(id, vol, speed)
+	local s = Instance.new("Sound")
+	s.SoundId = "rbxassetid://" .. id
+	s.Volume = vol or 1
+	s.PlaybackSpeed = speed or 1
+	s.RollOffMaxDistance = 0
+	s.Parent = workspace
+	return s
+end
+
+local clickSound       = makeSound("876939830",  3,   1)
+local tabClickSound    = makeSound("6042053626",  2,   1)
+local loadInSound      = makeSound("6026984224",  2.5, 1)
+
+-- verified working ui button click sound
+local togglePressSound = makeSound("4590662766",  3, 1)
+
+local function playSound(sound)
+	task.spawn(function()
+		local clone = sound:Clone()
+		clone.Parent = workspace
+		clone:Play()
+		game:GetService("Debris"):AddItem(clone, 5)
+	end)
+end
+
+local function playClick()    playSound(clickSound)    end
+local function playTabClick() playSound(tabClickSound) end
+
+-- preload all sounds so they are ready instantly
+local ContentProvider = game:GetService("ContentProvider")
+task.spawn(function()
+	ContentProvider:PreloadAsync({clickSound, tabClickSound, loadInSound, togglePressSound})
+end)
+
+-- TOGGLE ICON
+local toggleBtn = Instance.new("ImageButton")
+toggleBtn.Size               = UDim2.new(0, 52, 0, 52)
+toggleBtn.Position           = UDim2.new(1, -70, 0, 46)
+toggleBtn.AnchorPoint        = Vector2.new(0.5, 0.5)
+toggleBtn.BackgroundTransparency = 1
+toggleBtn.Image              = "rbxassetid://118815518054430"
+toggleBtn.ImageTransparency  = 1
+toggleBtn.ZIndex             = 10
+toggleBtn.Parent             = screenGui
+
+task.spawn(function()
+	task.wait(0.05)
+	loadInSound:Play()
+	TweenService:Create(toggleBtn, TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+		ImageTransparency = 0
+	}):Play()
+end)
+
+local toggleDragging  = false
+local toggleDragStart = nil
+local toggleStartPos  = nil
+local dragMoved       = false
+
+toggleBtn.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
+		toggleDragging  = true
+		dragMoved       = false
+		toggleDragStart = input.Position
+		toggleStartPos  = toggleBtn.Position
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if not toggleDragging then return end
+	if input.UserInputType ~= Enum.UserInputType.MouseMovement
+		and input.UserInputType ~= Enum.UserInputType.Touch then return end
+	if not toggleDragStart then return end
+	local delta = input.Position - toggleDragStart
+	if delta.Magnitude > 6 then dragMoved = true end
+	if dragMoved then
+		toggleBtn.Position = UDim2.new(
+			toggleStartPos.X.Scale, toggleStartPos.X.Offset + delta.X,
+			toggleStartPos.Y.Scale, toggleStartPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
+		toggleDragging = false
+	end
+end)
+
+local function animateToggleBtn()
+	TweenService:Create(toggleBtn,
+		TweenInfo.new(0.12, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+		{Size = UDim2.new(0, 72, 0, 72)}
+	):Play()
+	task.delay(0.12, function()
+		TweenService:Create(toggleBtn,
+			TweenInfo.new(0.22, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out),
+			{Size = UDim2.new(0, 52, 0, 52)}
+		):Play()
+	end)
+end
+
+-- MAIN FRAME
 local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 460, 0, 310)
-mainFrame.Position = UDim2.new(1, -490, 1, -360)
+mainFrame.Name               = "MainFrame"
+mainFrame.Size               = UDim2.new(0, 460, 0, 310)
+mainFrame.Position           = UDim2.new(1, -490, 1, -360)
 mainFrame.BackgroundTransparency = 1
-mainFrame.Active = true
-mainFrame.Draggable = false
-mainFrame.Visible = false
-mainFrame.Parent = screenGui
+mainFrame.Active             = true
+mainFrame.Draggable          = false
+mainFrame.Visible            = false
+mainFrame.Parent             = screenGui
 
 local topBar = Instance.new("Frame")
-topBar.Name = "TopBar"
-topBar.Size = UDim2.new(1, 0, 0, 40)
-topBar.Position = UDim2.new(0, 0, 0, 0)
+topBar.Name                  = "TopBar"
+topBar.Size                  = UDim2.new(1, 0, 0, 40)
+topBar.Position              = UDim2.new(0, 0, 0, 0)
 topBar.BackgroundTransparency = 1
-topBar.Parent = mainFrame
+topBar.Parent                = mainFrame
 
 local bgImage = Instance.new("ImageLabel")
-bgImage.Size = UDim2.new(1, 0, 1, 0)
-bgImage.Image = "rbxassetid://126986875621466"
+bgImage.Size                 = UDim2.new(1, 0, 1, 0)
+bgImage.Image                = "rbxassetid://126986875621466"
 bgImage.BackgroundTransparency = 1
-bgImage.ImageTransparency = 1
-bgImage.Parent = mainFrame
+bgImage.ImageTransparency    = 1
+bgImage.Parent               = mainFrame
 
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(0, 220, 0, 28)
-titleLabel.Position = UDim2.new(0, 9, 0, -2)
+titleLabel.Size              = UDim2.new(0, 220, 0, 28)
+titleLabel.Position          = UDim2.new(0, 9, 0, -2)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "JIGGY HITBOX"
-titleLabel.TextColor3 = Color3.new(1, 1, 1)
-titleLabel.Font = Enum.Font.Arcade
-titleLabel.TextSize = 24
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Parent = mainFrame
+titleLabel.Text              = "JIGGY HITBOX"
+titleLabel.TextColor3        = Color3.new(1, 1, 1)
+titleLabel.Font              = Enum.Font.Arcade
+titleLabel.TextSize          = 24
+titleLabel.TextXAlignment    = Enum.TextXAlignment.Left
+titleLabel.Parent            = mainFrame
 
 local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 24, 0, 24)
-minimizeBtn.Position = UDim2.new(1, -25, 0, 1)
+minimizeBtn.Size             = UDim2.new(0, 24, 0, 24)
+minimizeBtn.Position         = UDim2.new(1, -25, 0, 1)
 minimizeBtn.BackgroundTransparency = 1
-minimizeBtn.Text = ""
-minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-minimizeBtn.TextSize = 22
-minimizeBtn.Font = Enum.Font.GothamBold
-minimizeBtn.Parent = mainFrame
+minimizeBtn.Text             = ""
+minimizeBtn.TextColor3       = Color3.fromRGB(255, 255, 255)
+minimizeBtn.TextSize         = 22
+minimizeBtn.Font             = Enum.Font.GothamBold
+minimizeBtn.Parent           = mainFrame
 
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 24, 0, 24)
-closeBtn.Position = UDim2.new(1, -25, 0, 1)
+closeBtn.Size                = UDim2.new(0, 24, 0, 24)
+closeBtn.Position            = UDim2.new(1, -25, 0, 1)
 closeBtn.BackgroundTransparency = 1
-closeBtn.Text = ""
-closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.TextSize = 26
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Parent = mainFrame
+closeBtn.Text                = ""
+closeBtn.TextColor3          = Color3.fromRGB(255, 255, 255)
+closeBtn.TextSize            = 26
+closeBtn.Font                = Enum.Font.GothamBold
+closeBtn.Parent              = mainFrame
 
 local mainTabBtn = Instance.new("TextButton")
-mainTabBtn.Size = UDim2.new(0, 92, 0, 28)
-mainTabBtn.Position = UDim2.new(0, 15, 0, 42)
+mainTabBtn.Size              = UDim2.new(0, 92, 0, 28)
+mainTabBtn.Position          = UDim2.new(0, 15, 0, 42)
 mainTabBtn.BackgroundTransparency = 1
-mainTabBtn.Text = "MAIN"
-mainTabBtn.TextColor3 = Color3.new(1, 1, 1)
-mainTabBtn.Font = Enum.Font.Arcade
-mainTabBtn.TextSize = 18
-mainTabBtn.TextXAlignment = Enum.TextXAlignment.Center
-mainTabBtn.Parent = mainFrame
+mainTabBtn.Text              = "MAIN"
+mainTabBtn.TextColor3        = Color3.new(1, 1, 1)
+mainTabBtn.Font              = Enum.Font.Arcade
+mainTabBtn.TextSize          = 18
+mainTabBtn.TextXAlignment    = Enum.TextXAlignment.Center
+mainTabBtn.Parent            = mainFrame
 
 local miscTabBtn = Instance.new("TextButton")
-miscTabBtn.Size = UDim2.new(0, 92, 0, 28)
-miscTabBtn.Position = UDim2.new(0, 103, 0, 42)
+miscTabBtn.Size              = UDim2.new(0, 92, 0, 28)
+miscTabBtn.Position          = UDim2.new(0, 103, 0, 42)
 miscTabBtn.BackgroundTransparency = 1
-miscTabBtn.Text = "MISC"
-miscTabBtn.TextColor3 = Color3.new(1, 1, 1)
-miscTabBtn.Font = Enum.Font.Arcade
-miscTabBtn.TextSize = 18
-miscTabBtn.TextXAlignment = Enum.TextXAlignment.Center
-miscTabBtn.Parent = mainFrame
+miscTabBtn.Text              = "MISC"
+miscTabBtn.TextColor3        = Color3.new(1, 1, 1)
+miscTabBtn.Font              = Enum.Font.Arcade
+miscTabBtn.TextSize          = 18
+miscTabBtn.TextXAlignment    = Enum.TextXAlignment.Center
+miscTabBtn.Parent            = mainFrame
 
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(0, 290, 0, 195)
-contentFrame.Position = UDim2.new(0, 28, 0, 82)
+contentFrame.Size            = UDim2.new(0, 290, 0, 195)
+contentFrame.Position        = UDim2.new(0, 28, 0, 82)
 contentFrame.BackgroundTransparency = 1
-contentFrame.Parent = mainFrame
+contentFrame.Parent          = mainFrame
 
 local mainContent = Instance.new("Frame")
-mainContent.Size = UDim2.new(1, 0, 1, 0)
+mainContent.Size             = UDim2.new(1, 0, 1, 0)
 mainContent.BackgroundTransparency = 1
-mainContent.Visible = true
-mainContent.Parent = contentFrame
+mainContent.Visible          = true
+mainContent.Parent           = contentFrame
 
 local hitboxLabel = Instance.new("TextLabel")
-hitboxLabel.Size = UDim2.new(0, 110, 0, 28)
-hitboxLabel.Position = UDim2.new(0, -3, 0, -1)
+hitboxLabel.Size             = UDim2.new(0, 110, 0, 28)
+hitboxLabel.Position         = UDim2.new(0, -3, 0, -1)
 hitboxLabel.BackgroundTransparency = 1
-hitboxLabel.Text = "HITBOX"
-hitboxLabel.TextColor3 = Color3.new(0, 0, 0)
-hitboxLabel.Font = Enum.Font.Arcade
-hitboxLabel.TextSize = 20
-hitboxLabel.TextXAlignment = Enum.TextXAlignment.Left
-hitboxLabel.Parent = mainContent
+hitboxLabel.Text             = "HITBOX"
+hitboxLabel.TextColor3       = Color3.new(0, 0, 0)
+hitboxLabel.Font             = Enum.Font.Arcade
+hitboxLabel.TextSize         = 20
+hitboxLabel.TextXAlignment   = Enum.TextXAlignment.Left
+hitboxLabel.Parent           = mainContent
 
 local hitboxToggle = Instance.new("TextButton")
-hitboxToggle.Size = UDim2.new(0, 82, 0, 28)
-hitboxToggle.Position = UDim2.new(0, 130, 0, -1)
+hitboxToggle.Size            = UDim2.new(0, 82, 0, 28)
+hitboxToggle.Position        = UDim2.new(0, 130, 0, -1)
 hitboxToggle.BackgroundTransparency = 1
-hitboxToggle.Text = "OFF"
-hitboxToggle.TextColor3 = Color3.new(0, 0, 0)
-hitboxToggle.Font = Enum.Font.Arcade
-hitboxToggle.TextSize = 18
-hitboxToggle.Parent = mainContent
+hitboxToggle.Text            = "OFF"
+hitboxToggle.TextColor3      = Color3.new(0, 0, 0)
+hitboxToggle.Font            = Enum.Font.Arcade
+hitboxToggle.TextSize        = 18
+hitboxToggle.Parent          = mainContent
 
 local hitboxToggleCorner = Instance.new("UICorner")
 hitboxToggleCorner.CornerRadius = UDim.new(0, 12)
-hitboxToggleCorner.Parent = hitboxToggle
+hitboxToggleCorner.Parent    = hitboxToggle
 
 local hitboxStroke = Instance.new("UIStroke")
-hitboxStroke.Thickness = 2.5
-hitboxStroke.Color = Color3.fromRGB(255, 0, 0)
-hitboxStroke.Parent = hitboxToggle
+hitboxStroke.Thickness       = 2.5
+hitboxStroke.Color           = Color3.fromRGB(255, 0, 0)
+hitboxStroke.Parent          = hitboxToggle
 
 local autoweaveLabel = Instance.new("TextLabel")
-autoweaveLabel.Size = UDim2.new(0, 110, 0, 28)
-autoweaveLabel.Position = UDim2.new(0, -3, 0, 30)
+autoweaveLabel.Size          = UDim2.new(0, 110, 0, 28)
+autoweaveLabel.Position      = UDim2.new(0, -3, 0, 30)
 autoweaveLabel.BackgroundTransparency = 1
-autoweaveLabel.Text = "AUTOWEAVE"
-autoweaveLabel.TextColor3 = Color3.new(0, 0, 0)
-autoweaveLabel.Font = Enum.Font.Arcade
-autoweaveLabel.TextSize = 20
+autoweaveLabel.Text          = "AUTOWEAVE"
+autoweaveLabel.TextColor3    = Color3.new(0, 0, 0)
+autoweaveLabel.Font          = Enum.Font.Arcade
+autoweaveLabel.TextSize      = 20
 autoweaveLabel.TextXAlignment = Enum.TextXAlignment.Left
-autoweaveLabel.Parent = mainContent
+autoweaveLabel.Parent        = mainContent
 
 local autoweaveToggle = Instance.new("TextButton")
-autoweaveToggle.Size = UDim2.new(0, 82, 0, 28)
-autoweaveToggle.Position = UDim2.new(0, 130, 0, 30)
+autoweaveToggle.Size         = UDim2.new(0, 82, 0, 28)
+autoweaveToggle.Position     = UDim2.new(0, 130, 0, 30)
 autoweaveToggle.BackgroundTransparency = 1
-autoweaveToggle.Text = "OFF"
-autoweaveToggle.TextColor3 = Color3.new(0, 0, 0)
-autoweaveToggle.Font = Enum.Font.Arcade
-autoweaveToggle.TextSize = 18
-autoweaveToggle.Parent = mainContent
+autoweaveToggle.Text         = "OFF"
+autoweaveToggle.TextColor3   = Color3.new(0, 0, 0)
+autoweaveToggle.Font         = Enum.Font.Arcade
+autoweaveToggle.TextSize     = 18
+autoweaveToggle.Parent       = mainContent
 
 local autoweaveToggleCorner = Instance.new("UICorner")
 autoweaveToggleCorner.CornerRadius = UDim.new(0, 12)
 autoweaveToggleCorner.Parent = autoweaveToggle
 
 local autoweaveStroke = Instance.new("UIStroke")
-autoweaveStroke.Thickness = 2.5
-autoweaveStroke.Color = Color3.fromRGB(255, 0, 0)
-autoweaveStroke.Parent = autoweaveToggle
+autoweaveStroke.Thickness    = 2.5
+autoweaveStroke.Color        = Color3.fromRGB(255, 0, 0)
+autoweaveStroke.Parent       = autoweaveToggle
 
 local speedAnimLabel = Instance.new("TextLabel")
-speedAnimLabel.Size = UDim2.new(0, 110, 0, 28)
-speedAnimLabel.Position = UDim2.new(0, -3, 0, 63)
+speedAnimLabel.Size          = UDim2.new(0, 110, 0, 28)
+speedAnimLabel.Position      = UDim2.new(0, -3, 0, 63)
 speedAnimLabel.BackgroundTransparency = 1
-speedAnimLabel.Text = "SPEED ANIM"
-speedAnimLabel.TextColor3 = Color3.new(0, 0, 0)
-speedAnimLabel.Font = Enum.Font.Arcade
-speedAnimLabel.TextSize = 20
+speedAnimLabel.Text          = "SPEED ANIM"
+speedAnimLabel.TextColor3    = Color3.new(0, 0, 0)
+speedAnimLabel.Font          = Enum.Font.Arcade
+speedAnimLabel.TextSize      = 20
 speedAnimLabel.TextXAlignment = Enum.TextXAlignment.Left
-speedAnimLabel.Parent = mainContent
+speedAnimLabel.Parent        = mainContent
 
 local speedAnimToggle = Instance.new("TextButton")
-speedAnimToggle.Size = UDim2.new(0, 82, 0, 28)
-speedAnimToggle.Position = UDim2.new(0, 130, 0, 63)
+speedAnimToggle.Size         = UDim2.new(0, 82, 0, 28)
+speedAnimToggle.Position     = UDim2.new(0, 130, 0, 63)
 speedAnimToggle.BackgroundTransparency = 1
-speedAnimToggle.Text = "OFF"
-speedAnimToggle.TextColor3 = Color3.new(0, 0, 0)
-speedAnimToggle.Font = Enum.Font.Arcade
-speedAnimToggle.TextSize = 18
-speedAnimToggle.Parent = mainContent
+speedAnimToggle.Text         = "OFF"
+speedAnimToggle.TextColor3   = Color3.new(0, 0, 0)
+speedAnimToggle.Font         = Enum.Font.Arcade
+speedAnimToggle.TextSize     = 18
+speedAnimToggle.Parent       = mainContent
 
 local speedAnimToggleCorner = Instance.new("UICorner")
 speedAnimToggleCorner.CornerRadius = UDim.new(0, 12)
 speedAnimToggleCorner.Parent = speedAnimToggle
 
 local speedAnimStroke = Instance.new("UIStroke")
-speedAnimStroke.Thickness = 2.5
-speedAnimStroke.Color = Color3.fromRGB(255, 0, 0)
-speedAnimStroke.Parent = speedAnimToggle
+speedAnimStroke.Thickness    = 2.5
+speedAnimStroke.Color        = Color3.fromRGB(255, 0, 0)
+speedAnimStroke.Parent       = speedAnimToggle
 
 local espLabel = Instance.new("TextLabel")
-espLabel.Size = UDim2.new(0, 110, 0, 28)
-espLabel.Position = UDim2.new(0, -3, 0, 96)
+espLabel.Size                = UDim2.new(0, 110, 0, 28)
+espLabel.Position            = UDim2.new(0, -3, 0, 96)
 espLabel.BackgroundTransparency = 1
-espLabel.Text = "ESP"
-espLabel.TextColor3 = Color3.new(0, 0, 0)
-espLabel.Font = Enum.Font.Arcade
-espLabel.TextSize = 20
-espLabel.TextXAlignment = Enum.TextXAlignment.Left
-espLabel.Parent = mainContent
+espLabel.Text                = "ESP"
+espLabel.TextColor3          = Color3.new(0, 0, 0)
+espLabel.Font                = Enum.Font.Arcade
+espLabel.TextSize            = 20
+espLabel.TextXAlignment      = Enum.TextXAlignment.Left
+espLabel.Parent              = mainContent
 
 local espToggle = Instance.new("TextButton")
-espToggle.Size = UDim2.new(0, 82, 0, 28)
-espToggle.Position = UDim2.new(0, 130, 0, 96)
+espToggle.Size               = UDim2.new(0, 82, 0, 28)
+espToggle.Position           = UDim2.new(0, 130, 0, 96)
 espToggle.BackgroundTransparency = 1
-espToggle.Text = "OFF"
-espToggle.TextColor3 = Color3.new(0, 0, 0)
-espToggle.Font = Enum.Font.Arcade
-espToggle.TextSize = 18
-espToggle.Parent = mainContent
+espToggle.Text               = "OFF"
+espToggle.TextColor3         = Color3.new(0, 0, 0)
+espToggle.Font               = Enum.Font.Arcade
+espToggle.TextSize           = 18
+espToggle.Parent             = mainContent
 
 local espToggleCorner = Instance.new("UICorner")
 espToggleCorner.CornerRadius = UDim.new(0, 12)
-espToggleCorner.Parent = espToggle
+espToggleCorner.Parent       = espToggle
 
 local espStroke = Instance.new("UIStroke")
-espStroke.Thickness = 2.5
-espStroke.Color = Color3.fromRGB(255, 0, 0)
-espStroke.Parent = espToggle
+espStroke.Thickness          = 2.5
+espStroke.Color              = Color3.fromRGB(255, 0, 0)
+espStroke.Parent             = espToggle
 
 local speedWalkLabel = Instance.new("TextLabel")
-speedWalkLabel.Size = UDim2.new(0, 110, 0, 28)
-speedWalkLabel.Position = UDim2.new(0, -3, 0, 127)
+speedWalkLabel.Size          = UDim2.new(0, 110, 0, 28)
+speedWalkLabel.Position      = UDim2.new(0, -3, 0, 127)
 speedWalkLabel.BackgroundTransparency = 1
-speedWalkLabel.Text = "SPEED WALK"
-speedWalkLabel.TextColor3 = Color3.new(0, 0, 0)
-speedWalkLabel.Font = Enum.Font.Arcade
-speedWalkLabel.TextSize = 20
+speedWalkLabel.Text          = "SPEED WALK"
+speedWalkLabel.TextColor3    = Color3.new(0, 0, 0)
+speedWalkLabel.Font          = Enum.Font.Arcade
+speedWalkLabel.TextSize      = 20
 speedWalkLabel.TextXAlignment = Enum.TextXAlignment.Left
-speedWalkLabel.Parent = mainContent
+speedWalkLabel.Parent        = mainContent
 
 local speedWalkToggle = Instance.new("TextButton")
-speedWalkToggle.Size = UDim2.new(0, 82, 0, 28)
-speedWalkToggle.Position = UDim2.new(0, 130, 0, 127)
+speedWalkToggle.Size         = UDim2.new(0, 82, 0, 28)
+speedWalkToggle.Position     = UDim2.new(0, 130, 0, 127)
 speedWalkToggle.BackgroundTransparency = 1
-speedWalkToggle.Text = "OFF"
-speedWalkToggle.TextColor3 = Color3.new(0, 0, 0)
-speedWalkToggle.Font = Enum.Font.Arcade
-speedWalkToggle.TextSize = 18
-speedWalkToggle.Parent = mainContent
+speedWalkToggle.Text         = "OFF"
+speedWalkToggle.TextColor3   = Color3.new(0, 0, 0)
+speedWalkToggle.Font         = Enum.Font.Arcade
+speedWalkToggle.TextSize     = 18
+speedWalkToggle.Parent       = mainContent
 
 local speedWalkToggleCorner = Instance.new("UICorner")
 speedWalkToggleCorner.CornerRadius = UDim.new(0, 12)
 speedWalkToggleCorner.Parent = speedWalkToggle
 
 local speedWalkStroke = Instance.new("UIStroke")
-speedWalkStroke.Thickness = 2.5
-speedWalkStroke.Color = Color3.fromRGB(255, 0, 0)
-speedWalkStroke.Parent = speedWalkToggle
+speedWalkStroke.Thickness    = 2.5
+speedWalkStroke.Color        = Color3.fromRGB(255, 0, 0)
+speedWalkStroke.Parent       = speedWalkToggle
 
+-- MISC CONTENT
 local miscContent = Instance.new("Frame")
-miscContent.Size = UDim2.new(1, 0, 1, 0)
+miscContent.Size             = UDim2.new(1, 0, 1, 0)
 miscContent.BackgroundTransparency = 1
-miscContent.Visible = false
-miscContent.Parent = contentFrame
+miscContent.Visible          = false
+miscContent.Parent           = contentFrame
 
 local sizeLabel = Instance.new("TextLabel")
-sizeLabel.Size = UDim2.new(0, 110, 0, 28)
-sizeLabel.Position = UDim2.new(0, -3, 0, -1)
+sizeLabel.Size               = UDim2.new(0, 110, 0, 28)
+sizeLabel.Position           = UDim2.new(0, -3, 0, -1)
 sizeLabel.BackgroundTransparency = 1
-sizeLabel.Text = "HITBOX SIZE"
-sizeLabel.TextColor3 = Color3.new(0, 0, 0)
-sizeLabel.Font = Enum.Font.Arcade
-sizeLabel.TextSize = 20
-sizeLabel.TextXAlignment = Enum.TextXAlignment.Left
-sizeLabel.Parent = miscContent
+sizeLabel.Text               = "HITBOX SIZE"
+sizeLabel.TextColor3         = Color3.new(0, 0, 0)
+sizeLabel.Font               = Enum.Font.Arcade
+sizeLabel.TextSize           = 20
+sizeLabel.TextXAlignment     = Enum.TextXAlignment.Left
+sizeLabel.Parent             = miscContent
 
 local sizeBox = Instance.new("TextBox")
-sizeBox.Size = UDim2.new(0, 82, 0, 28)
-sizeBox.Position = UDim2.new(0, 128, 0, -1)
-sizeBox.Text = "8"
-sizeBox.PlaceholderText = "1-10"
-sizeBox.BackgroundColor3 = Color3.fromRGB(242, 242, 242)
-sizeBox.TextColor3 = Color3.new(0, 0, 0)
-sizeBox.Font = Enum.Font.Arcade
-sizeBox.TextSize = 18
-sizeBox.Parent = miscContent
+sizeBox.Size                 = UDim2.new(0, 82, 0, 28)
+sizeBox.Position             = UDim2.new(0, 128, 0, -1)
+sizeBox.Text                 = "8"
+sizeBox.PlaceholderText      = "1-10"
+sizeBox.BackgroundColor3     = Color3.fromRGB(242, 242, 242)
+sizeBox.BackgroundTransparency = 0
+sizeBox.TextColor3           = Color3.new(0, 0, 0)
+sizeBox.Font                 = Enum.Font.Arcade
+sizeBox.TextSize             = 18
+sizeBox.Parent               = miscContent
 
 local sizeBoxCorner = Instance.new("UICorner")
-sizeBoxCorner.CornerRadius = UDim.new(0, 12)
-sizeBoxCorner.Parent = sizeBox
+sizeBoxCorner.CornerRadius   = UDim.new(0, 12)
+sizeBoxCorner.Parent         = sizeBox
 
 local speedWalkValueLabel = Instance.new("TextLabel")
-speedWalkValueLabel.Size = UDim2.new(0, 110, 0, 28)
+speedWalkValueLabel.Size     = UDim2.new(0, 110, 0, 28)
 speedWalkValueLabel.Position = UDim2.new(0, -3, 0, 30)
 speedWalkValueLabel.BackgroundTransparency = 1
-speedWalkValueLabel.Text = "WALK SPEED"
+speedWalkValueLabel.Text     = "WALK SPEED"
 speedWalkValueLabel.TextColor3 = Color3.new(0, 0, 0)
-speedWalkValueLabel.Font = Enum.Font.Arcade
+speedWalkValueLabel.Font     = Enum.Font.Arcade
 speedWalkValueLabel.TextSize = 20
 speedWalkValueLabel.TextXAlignment = Enum.TextXAlignment.Left
-speedWalkValueLabel.Parent = miscContent
+speedWalkValueLabel.Parent   = miscContent
 
 local speedWalkBox = Instance.new("TextBox")
-speedWalkBox.Size = UDim2.new(0, 82, 0, 28)
-speedWalkBox.Position = UDim2.new(0, 128, 0, 30)
-speedWalkBox.Text = "50"
+speedWalkBox.Size            = UDim2.new(0, 82, 0, 28)
+speedWalkBox.Position        = UDim2.new(0, 128, 0, 30)
+speedWalkBox.Text            = "50"
 speedWalkBox.PlaceholderText = "10-100"
 speedWalkBox.BackgroundColor3 = Color3.fromRGB(242, 242, 242)
-speedWalkBox.TextColor3 = Color3.new(0, 0, 0)
-speedWalkBox.Font = Enum.Font.Arcade
-speedWalkBox.TextSize = 18
-speedWalkBox.Parent = miscContent
+speedWalkBox.BackgroundTransparency = 0
+speedWalkBox.TextColor3      = Color3.new(0, 0, 0)
+speedWalkBox.Font            = Enum.Font.Arcade
+speedWalkBox.TextSize        = 18
+speedWalkBox.Parent          = miscContent
 
 local speedWalkBoxCorner = Instance.new("UICorner")
 speedWalkBoxCorner.CornerRadius = UDim.new(0, 12)
-speedWalkBoxCorner.Parent = speedWalkBox
+speedWalkBoxCorner.Parent    = speedWalkBox
 
 local displayLabel = Instance.new("TextLabel")
-displayLabel.Size = UDim2.new(0, 110, 0, 28)
-displayLabel.Position = UDim2.new(0, -3, 0, 63)
+displayLabel.Size            = UDim2.new(0, 110, 0, 28)
+displayLabel.Position        = UDim2.new(0, -3, 0, 63)
 displayLabel.BackgroundTransparency = 1
-displayLabel.Text = "DISPLAY NAMES"
-displayLabel.TextColor3 = Color3.new(0, 0, 0)
-displayLabel.Font = Enum.Font.Arcade
-displayLabel.TextSize = 20
-displayLabel.TextXAlignment = Enum.TextXAlignment.Left
-displayLabel.Parent = miscContent
+displayLabel.Text            = "DISPLAY NAMES"
+displayLabel.TextColor3      = Color3.new(0, 0, 0)
+displayLabel.Font            = Enum.Font.Arcade
+displayLabel.TextSize        = 20
+displayLabel.TextXAlignment  = Enum.TextXAlignment.Left
+displayLabel.Parent          = miscContent
 
 local displayToggle = Instance.new("TextButton")
-displayToggle.Size = UDim2.new(0, 82, 0, 28)
-displayToggle.Position = UDim2.new(0, 130, 0, 63)
+displayToggle.Size           = UDim2.new(0, 82, 0, 28)
+displayToggle.Position       = UDim2.new(0, 130, 0, 63)
 displayToggle.BackgroundTransparency = 1
-displayToggle.Text = "ON"
-displayToggle.TextColor3 = Color3.new(0, 0, 0)
-displayToggle.Font = Enum.Font.Arcade
-displayToggle.TextSize = 18
-displayToggle.Parent = miscContent
+displayToggle.Text           = "ON"
+displayToggle.TextColor3     = Color3.new(0, 0, 0)
+displayToggle.Font           = Enum.Font.Arcade
+displayToggle.TextSize       = 18
+displayToggle.Parent         = miscContent
 
 local displayToggleCorner = Instance.new("UICorner")
 displayToggleCorner.CornerRadius = UDim.new(0, 12)
-displayToggleCorner.Parent = displayToggle
+displayToggleCorner.Parent   = displayToggle
 
 local displayStroke = Instance.new("UIStroke")
-displayStroke.Thickness = 2.5
-displayStroke.Color = Color3.fromRGB(0, 255, 0)
-displayStroke.Parent = displayToggle
+displayStroke.Thickness      = 2.5
+displayStroke.Color          = Color3.fromRGB(0, 255, 0)
+displayStroke.Parent         = displayToggle
 
 local fpsLabel = Instance.new("TextLabel")
-fpsLabel.Size = UDim2.new(0, 110, 0, 28)
-fpsLabel.Position = UDim2.new(0, -3, 0, 96)
+fpsLabel.Size                = UDim2.new(0, 110, 0, 28)
+fpsLabel.Position            = UDim2.new(0, -3, 0, 96)
 fpsLabel.BackgroundTransparency = 1
-fpsLabel.Text = "FPS BOOST"
-fpsLabel.TextColor3 = Color3.new(0, 0, 0)
-fpsLabel.Font = Enum.Font.Arcade
-fpsLabel.TextSize = 20
-fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
-fpsLabel.Parent = miscContent
+fpsLabel.Text                = "FPS BOOST"
+fpsLabel.TextColor3          = Color3.new(0, 0, 0)
+fpsLabel.Font                = Enum.Font.Arcade
+fpsLabel.TextSize            = 20
+fpsLabel.TextXAlignment      = Enum.TextXAlignment.Left
+fpsLabel.Parent              = miscContent
 
 local fpsToggle = Instance.new("TextButton")
-fpsToggle.Size = UDim2.new(0, 82, 0, 28)
-fpsToggle.Position = UDim2.new(0, 130, 0, 96)
+fpsToggle.Size               = UDim2.new(0, 82, 0, 28)
+fpsToggle.Position           = UDim2.new(0, 130, 0, 96)
 fpsToggle.BackgroundTransparency = 1
-fpsToggle.Text = "OFF"
-fpsToggle.TextColor3 = Color3.new(0, 0, 0)
-fpsToggle.Font = Enum.Font.Arcade
-fpsToggle.TextSize = 18
-fpsToggle.Parent = miscContent
+fpsToggle.Text               = "OFF"
+fpsToggle.TextColor3         = Color3.new(0, 0, 0)
+fpsToggle.Font               = Enum.Font.Arcade
+fpsToggle.TextSize           = 18
+fpsToggle.Parent             = miscContent
 
 local fpsToggleCorner = Instance.new("UICorner")
 fpsToggleCorner.CornerRadius = UDim.new(0, 12)
-fpsToggleCorner.Parent = fpsToggle
+fpsToggleCorner.Parent       = fpsToggle
 
 local fpsStroke = Instance.new("UIStroke")
-fpsStroke.Thickness = 2.5
-fpsStroke.Color = Color3.fromRGB(255, 0, 0)
-fpsStroke.Parent = fpsToggle
+fpsStroke.Thickness          = 2.5
+fpsStroke.Color              = Color3.fromRGB(255, 0, 0)
+fpsStroke.Parent             = fpsToggle
 
 local rejoinBtn = Instance.new("TextButton")
-rejoinBtn.Size = UDim2.new(0, 240, 0, 38)
-rejoinBtn.Position = UDim2.new(0.5, -210, 1, -72)
+rejoinBtn.Size               = UDim2.new(0, 240, 0, 38)
+rejoinBtn.Position           = UDim2.new(0.5, -210, 1, -72)
 rejoinBtn.BackgroundTransparency = 1
-rejoinBtn.Text = "REJOIN"
-rejoinBtn.TextColor3 = Color3.new(0, 0, 0)
-rejoinBtn.Font = Enum.Font.Arcade
-rejoinBtn.TextSize = 18
-rejoinBtn.Parent = miscContent
+rejoinBtn.Text               = "REJOIN"
+rejoinBtn.TextColor3         = Color3.new(0, 0, 0)
+rejoinBtn.Font               = Enum.Font.Arcade
+rejoinBtn.TextSize           = 18
+rejoinBtn.Parent             = miscContent
 
 local bottomLabel = Instance.new("TextLabel")
-bottomLabel.Size = UDim2.new(0, 260, 0, 28)
-bottomLabel.Position = UDim2.new(0, -53, 1, -45)
+bottomLabel.Size             = UDim2.new(0, 260, 0, 28)
+bottomLabel.Position         = UDim2.new(0, -53, 1, -45)
 bottomLabel.BackgroundTransparency = 1
-bottomLabel.Text = " JIGGY ZURA"
-bottomLabel.TextColor3 = Color3.new(0, 0, 0)
-bottomLabel.Font = Enum.Font.Arcade
-bottomLabel.TextSize = 24
-bottomLabel.TextXAlignment = Enum.TextXAlignment.Center
-bottomLabel.Parent = mainFrame
+bottomLabel.Text             = " JIGGY ZURA"
+bottomLabel.TextColor3       = Color3.new(0, 0, 0)
+bottomLabel.Font             = Enum.Font.Arcade
+bottomLabel.TextSize         = 24
+bottomLabel.TextXAlignment   = Enum.TextXAlignment.Center
+bottomLabel.Parent           = mainFrame
 
--- SOUNDS
-local clickSound = Instance.new("Sound")
-clickSound.SoundId = "rbxassetid://876939830"
-clickSound.Volume = 3
-clickSound.Parent = SoundService
-
--- Tab switch sound (was previously the open sound)
-local tabClickSound = Instance.new("Sound")
-tabClickSound.SoundId = "rbxassetid://6042053626"
-tabClickSound.Volume = 2
-tabClickSound.Parent = SoundService
-
--- UI open sound (was previously the tab sound)
-local openSound = Instance.new("Sound")
-openSound.SoundId = "rbxassetid://6026984224"
-openSound.Volume = 2.5
-openSound.Parent = SoundService
-
-local function playSound(sound)
-	task.spawn(function()
-		local clone = sound:Clone()
-		clone.Parent = SoundService
-		clone:Play()
-		clone.Ended:Wait()
-		clone:Destroy()
-	end)
-end
-
-local function playClick()
-	playSound(clickSound)
-end
-
-local function playTabClick()
-	playSound(tabClickSound)
-end
-
-local function playOpenSound()
-	playSound(openSound)
-end
-
+-- FADE IN / OUT
 local fadeTweenInfo = TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
 local function fadeGuiIn()
 	mainFrame.Visible = true
-	playOpenSound()
 	bgImage.ImageTransparency = 1
-	local tween = TweenService:Create(bgImage, fadeTweenInfo, {ImageTransparency = 0})
-	tween:Play()
+	TweenService:Create(bgImage, fadeTweenInfo, {ImageTransparency = 0}):Play()
 	for _, desc in ipairs(mainFrame:GetDescendants()) do
-		if desc:IsA("TextLabel") or desc:IsA("TextButton") or desc:IsA("TextBox") then
+		if desc:IsA("TextLabel") or desc:IsA("TextButton") then
 			desc.TextTransparency = 1
 			TweenService:Create(desc, fadeTweenInfo, {TextTransparency = 0}):Play()
+		elseif desc:IsA("TextBox") then
+			desc.TextTransparency = 1
+			desc.BackgroundTransparency = 1
+			TweenService:Create(desc, fadeTweenInfo, {TextTransparency = 0, BackgroundTransparency = 0}):Play()
 		end
 		if desc:IsA("UIStroke") then
 			desc.Transparency = 1
@@ -451,20 +523,47 @@ local function fadeGuiIn()
 end
 
 local function fadeGuiOut()
-	local tween = TweenService:Create(bgImage, fadeTweenInfo, {ImageTransparency = 1})
-	tween:Play()
+	TweenService:Create(bgImage, fadeTweenInfo, {ImageTransparency = 1}):Play()
 	for _, desc in ipairs(mainFrame:GetDescendants()) do
-		if desc:IsA("TextLabel") or desc:IsA("TextButton") or desc:IsA("TextBox") then
+		if desc:IsA("TextLabel") or desc:IsA("TextButton") then
 			TweenService:Create(desc, fadeTweenInfo, {TextTransparency = 1}):Play()
+		elseif desc:IsA("TextBox") then
+			TweenService:Create(desc, fadeTweenInfo, {TextTransparency = 1, BackgroundTransparency = 1}):Play()
 		end
 		if desc:IsA("UIStroke") then
 			TweenService:Create(desc, fadeTweenInfo, {Transparency = 1}):Play()
 		end
 	end
-	task.wait(0.5)
+	task.wait(0.45)
 	mainFrame.Visible = false
 end
 
+-- TOGGLE BUTTON CLICK
+-- using InputEnded instead of MouseButton1Click so the sound
+-- fires on release which is more reliable in exploit environments
+toggleBtn.InputEnded:Connect(function(input)
+	if input.UserInputType ~= Enum.UserInputType.MouseButton1
+		and input.UserInputType ~= Enum.UserInputType.Touch then return end
+	if dragMoved then return end
+
+	-- play sound using a fresh local sound parented to LocalPlayer
+	-- so it always fires regardless of CoreGui restrictions
+	local snd = Instance.new("Sound")
+	snd.SoundId = "rbxassetid://4590662766"
+	snd.Volume = 3
+	snd.Parent = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or workspace
+	snd:Play()
+	game:GetService("Debris"):AddItem(snd, 3)
+
+	animateToggleBtn()
+	if mainFrame.Visible then
+		fadeGuiOut()
+	else
+		fadeGuiIn()
+	end
+end)
+
+-- HITBOX
 _G.HitboxEnabled = false
 local targets = {}
 
@@ -485,17 +584,19 @@ local function applyHitbox()
 		if char then
 			local hrp = char:FindFirstChild("HumanoidRootPart")
 			if hrp then
-				hrp.Size = Vector3.new(size, size, size)
+				hrp.Size        = Vector3.new(size, size, size)
 				hrp.Transparency = 1
-				hrp.CanCollide = false
+				hrp.CanCollide  = false
 			end
 		end
 	end
 end
 
+-- AUTOWEAVE
 local autoweaveActive = false
-local autoweaveTask = nil
-local HoldDuration = 0.220
+local autoweaveTask   = nil
+local HoldDuration    = 0.220
+local ReweaveDelay    = 0
 
 local function getRemote()
 	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -536,13 +637,12 @@ local function stopAutoweave()
 	if autoweaveTask then task.cancel(autoweaveTask) end
 	autoweaveTask = nil
 	local remote = getRemote()
-	if remote then
-		remote:FireServer("Weave", nil, false)
-	end
+	if remote then remote:FireServer("Weave", nil, false) end
 end
 
+-- SPEED ANIM
 local speedAnimEnabled = false
-local speedAnimTask = nil
+local speedAnimTask    = nil
 
 local function startSpeedAnim()
 	if speedAnimEnabled then return end
@@ -558,7 +658,7 @@ local function startSpeedAnim()
 					end
 				end
 			end
-			task.wait(0.1)
+			task.wait(0.12 + math.random() * 0.08)
 		end
 	end)
 end
@@ -578,8 +678,9 @@ local function stopSpeedAnim()
 	end
 end
 
-local espEnabled = false
-local rainbowTask = nil
+-- ESP
+local espEnabled          = false
+local rainbowTask         = nil
 local displayNamesEnabled = true
 
 local function updateESP()
@@ -587,32 +688,32 @@ local function updateESP()
 		local char = plr.Character
 		if char then
 			local highlight = char:FindFirstChild("JiggyESP") or Instance.new("Highlight")
-			highlight.Name = "JiggyESP"
-			highlight.Adornee = char
-			highlight.FillColor = Color3.fromRGB(255, 0, 0)
-			highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-			highlight.FillTransparency = 0.7
+			highlight.Name               = "JiggyESP"
+			highlight.Adornee            = char
+			highlight.FillColor          = Color3.fromRGB(255, 0, 0)
+			highlight.OutlineColor       = Color3.fromRGB(255, 255, 255)
+			highlight.FillTransparency   = 0.7
 			highlight.OutlineTransparency = 0
-			highlight.Parent = char
+			highlight.Parent             = char
 			if displayNamesEnabled then
 				local head = char:FindFirstChild("Head")
 				if head then
 					local billboard = char:FindFirstChild("JiggyNameESP") or Instance.new("BillboardGui")
-					billboard.Name = "JiggyNameESP"
-					billboard.Adornee = head
-					billboard.Size = UDim2.new(0, 200, 0, 50)
+					billboard.Name        = "JiggyNameESP"
+					billboard.Adornee     = head
+					billboard.Size        = UDim2.new(0, 200, 0, 50)
 					billboard.StudsOffset = Vector3.new(0, 3, 0)
 					billboard.AlwaysOnTop = true
-					billboard.Parent = char
+					billboard.Parent      = char
 					local text = billboard:FindFirstChild("NameText") or Instance.new("TextLabel")
-					text.Name = "NameText"
-					text.Size = UDim2.new(1, 0, 1, 0)
+					text.Name             = "NameText"
+					text.Size             = UDim2.new(1, 0, 1, 0)
 					text.BackgroundTransparency = 1
-					text.Text = plr.DisplayName
-					text.TextScaled = false
-					text.TextSize = 14
-					text.Font = Enum.Font.SourceSans
-					text.Parent = billboard
+					text.Text             = plr.DisplayName
+					text.TextScaled       = false
+					text.TextSize         = 14
+					text.Font             = Enum.Font.SourceSans
+					text.Parent           = billboard
 				end
 			end
 		end
@@ -643,20 +744,16 @@ local function startRainbow()
 	if rainbowTask then return end
 	rainbowTask = task.spawn(function()
 		while true do
-			local hue = (tick() % 6) / 6
+			local hue   = (tick() % 6) / 6
 			local color = Color3.fromHSV(hue, 1, 1)
 			for _, plr in ipairs(Players:GetPlayers()) do
 				if plr ~= LocalPlayer and plr.Character then
 					local hl = plr.Character:FindFirstChild("JiggyESP")
-					if hl then
-						hl.OutlineColor = color
-					end
+					if hl then hl.OutlineColor = color end
 					local bb = plr.Character:FindFirstChild("JiggyNameESP")
 					if bb then
 						local txt = bb:FindFirstChild("NameText")
-						if txt then
-							txt.TextColor3 = color
-						end
+						if txt then txt.TextColor3 = color end
 					end
 				end
 			end
@@ -666,22 +763,33 @@ local function startRainbow()
 end
 
 local function stopRainbow()
-	if rainbowTask then
-		task.cancel(rainbowTask)
-		rainbowTask = nil
-	end
+	if rainbowTask then task.cancel(rainbowTask) rainbowTask = nil end
 end
 
-local speedWalkEnabled = false
-local speedWalkValue = 50
+-- WALK SPEED
+local speedWalkEnabled    = false
+local speedWalkValue      = 50
+local walkSpeedConnection = nil
 
 local function applyWalkSpeed()
+	speedWalkValue = tonumber(speedWalkBox.Text) or 50
+	if walkSpeedConnection then walkSpeedConnection:Disconnect() walkSpeedConnection = nil end
+	walkSpeedConnection = RunService.Heartbeat:Connect(function()
+		if not speedWalkEnabled then return end
+		local char = LocalPlayer.Character
+		if char then
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum then hum.WalkSpeed = speedWalkValue end
+		end
+	end)
+end
+
+local function resetWalkSpeed()
+	if walkSpeedConnection then walkSpeedConnection:Disconnect() walkSpeedConnection = nil end
 	local char = LocalPlayer.Character
 	if char then
 		local hum = char:FindFirstChildOfClass("Humanoid")
-		if hum then
-			hum.WalkSpeed = speedWalkEnabled and speedWalkValue or 16
-		end
+		if hum then hum.WalkSpeed = 16 end
 	end
 end
 
@@ -693,15 +801,19 @@ end
 
 local function stopSpeedWalk()
 	speedWalkEnabled = false
-	applyWalkSpeed()
+	resetWalkSpeed()
 end
 
-local fpsBoosted = false
+-- FPS BOOST
+local fpsBoosted               = false
+local savedCastShadow          = {}
+local savedTextureTransparency = {}
+local savedParticleEnabled     = {}
 
 local function updateToggleStyle(btn, enabled)
-	btn.Text = enabled and "ON" or "OFF"
+	btn.Text       = enabled and "ON" or "OFF"
 	btn.TextColor3 = Color3.new(0, 0, 0)
-	local stroke = btn:FindFirstChildOfClass("UIStroke")
+	local stroke   = btn:FindFirstChildOfClass("UIStroke")
 	if stroke then
 		stroke.Color = enabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
 	end
@@ -709,33 +821,73 @@ end
 
 local function toggleFPSBoost()
 	fpsBoosted = not fpsBoosted
+
 	if fpsBoosted then
-		pcall(function()
-			game.Lighting.GlobalShadows = false
-			game.Lighting.FogEnd = 1000000
-			game.Lighting.Brightness = 0
-			game.Lighting.ClockTime = 14
-			game.Lighting.Ambient = Color3.fromRGB(60, 60, 60)
-			game.Lighting.Technology = Enum.Technology.Compatibility
-			settings().Rendering.QualityLevel = 1
-			settings().Graphics.QualityLevel = 1
+		game.Lighting.GlobalShadows = false
+
+		for _, obj in ipairs(workspace:GetDescendants()) do
+			pcall(function()
+				if obj:IsA("BasePart") then
+					savedCastShadow[obj] = obj.CastShadow
+					obj.CastShadow = false
+				end
+				if obj:IsA("Texture") or obj:IsA("Decal") then
+					savedTextureTransparency[obj] = obj.Transparency
+					obj.Transparency = 1
+				end
+				if obj:IsA("ParticleEmitter") or obj:IsA("Trail")
+					or obj:IsA("Beam") or obj:IsA("Fire")
+					or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+					savedParticleEnabled[obj] = obj.Enabled
+					obj.Enabled = false
+				end
+			end)
+		end
+
+		workspace.DescendantAdded:Connect(function(obj)
+			if not fpsBoosted then return end
+			pcall(function()
+				if obj:IsA("BasePart") then
+					savedCastShadow[obj] = obj.CastShadow
+					obj.CastShadow = false
+				end
+				if obj:IsA("Texture") or obj:IsA("Decal") then
+					savedTextureTransparency[obj] = obj.Transparency
+					obj.Transparency = 1
+				end
+				if obj:IsA("ParticleEmitter") or obj:IsA("Trail")
+					or obj:IsA("Beam") or obj:IsA("Fire")
+					or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+					savedParticleEnabled[obj] = obj.Enabled
+					obj.Enabled = false
+				end
+			end)
 		end)
+
 		updateToggleStyle(fpsToggle, true)
 	else
-		pcall(function()
-			game.Lighting.GlobalShadows = true
-			game.Lighting.FogEnd = 100
-			game.Lighting.Brightness = 1
-			game.Lighting.ClockTime = 14
-			game.Lighting.Ambient = Color3.fromRGB(128, 128, 128)
-			game.Lighting.Technology = Enum.Technology.Future
-			settings().Rendering.QualityLevel = 10
-			settings().Graphics.QualityLevel = 10
-		end)
+		game.Lighting.GlobalShadows = true
+
+		for obj, val in pairs(savedCastShadow) do
+			pcall(function() obj.CastShadow = val end)
+		end
+		savedCastShadow = {}
+
+		for obj, val in pairs(savedTextureTransparency) do
+			pcall(function() obj.Transparency = val end)
+		end
+		savedTextureTransparency = {}
+
+		for obj, val in pairs(savedParticleEnabled) do
+			pcall(function() obj.Enabled = val end)
+		end
+		savedParticleEnabled = {}
+
 		updateToggleStyle(fpsToggle, false)
 	end
 end
 
+-- BUTTON CONNECTIONS
 hitboxToggle.MouseButton1Click:Connect(function()
 	playClick()
 	_G.HitboxEnabled = not _G.HitboxEnabled
@@ -746,9 +898,9 @@ hitboxToggle.MouseButton1Click:Connect(function()
 			if char then
 				local hrp = char:FindFirstChild("HumanoidRootPart")
 				if hrp then
-					hrp.Size = Vector3.new(2, 2, 1)
+					hrp.Size        = Vector3.new(2, 2, 1)
 					hrp.Transparency = 1
-					hrp.CanCollide = true
+					hrp.CanCollide  = true
 				end
 			end
 		end
@@ -757,44 +909,26 @@ end)
 
 autoweaveToggle.MouseButton1Click:Connect(function()
 	playClick()
-	if autoweaveActive then
-		stopAutoweave()
-	else
-		startAutoweave()
-	end
+	if autoweaveActive then stopAutoweave() else startAutoweave() end
 	updateToggleStyle(autoweaveToggle, autoweaveActive)
 end)
 
 speedAnimToggle.MouseButton1Click:Connect(function()
 	playClick()
-	if speedAnimEnabled then
-		stopSpeedAnim()
-	else
-		startSpeedAnim()
-	end
+	if speedAnimEnabled then stopSpeedAnim() else startSpeedAnim() end
 	updateToggleStyle(speedAnimToggle, speedAnimEnabled)
 end)
 
 espToggle.MouseButton1Click:Connect(function()
 	playClick()
 	espEnabled = not espEnabled
-	if espEnabled then
-		updateESP()
-		startRainbow()
-	else
-		removeAllESP()
-		stopRainbow()
-	end
+	if espEnabled then updateESP() startRainbow() else removeAllESP() stopRainbow() end
 	updateToggleStyle(espToggle, espEnabled)
 end)
 
 speedWalkToggle.MouseButton1Click:Connect(function()
 	playClick()
-	if speedWalkEnabled then
-		stopSpeedWalk()
-	else
-		startSpeedWalk()
-	end
+	if speedWalkEnabled then stopSpeedWalk() else startSpeedWalk() end
 	updateToggleStyle(speedWalkToggle, speedWalkEnabled)
 end)
 
@@ -803,35 +937,29 @@ displayToggle.MouseButton1Click:Connect(function()
 	displayNamesEnabled = not displayNamesEnabled
 	updateToggleStyle(displayToggle, displayNamesEnabled)
 	if displayNamesEnabled then
-		if espEnabled then
-			updateESP()
-		end
+		if espEnabled then updateESP() end
 	else
 		removeNameESP()
 	end
 end)
 
+fpsToggle.MouseButton1Click:Connect(function()
+	playClick()
+	toggleFPSBoost()
+end)
+
 sizeBox.FocusLost:Connect(function()
-	if _G.HitboxEnabled then
-		applyHitbox()
-	end
+	if _G.HitboxEnabled then applyHitbox() end
 end)
 
 speedWalkBox.FocusLost:Connect(function()
 	speedWalkValue = tonumber(speedWalkBox.Text) or 50
-	if speedWalkEnabled then
-		applyWalkSpeed()
-	end
+	if speedWalkEnabled then applyWalkSpeed() end
 end)
 
 rejoinBtn.MouseButton1Click:Connect(function()
 	playClick()
 	TeleportService:Teleport(game.PlaceId)
-end)
-
-fpsToggle.MouseButton1Click:Connect(function()
-	playClick()
-	toggleFPSBoost()
 end)
 
 mainTabBtn.MouseButton1Click:Connect(function()
@@ -856,22 +984,26 @@ closeBtn.MouseButton1Click:Connect(function()
 	screenGui:Destroy()
 end)
 
-local dragging = false
+-- DRAG MAIN FRAME
+local dragging  = false
 local dragStart = nil
-local startPos = nil
+local startPos  = nil
 
 topBar.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
+		dragging  = true
 		dragStart = input.Position
-		startPos = mainFrame.Position
+		startPos  = mainFrame.Position
 	end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
 	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
 		local delta = input.Position - dragStart
-		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		mainFrame.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
 	end
 end)
 
@@ -881,14 +1013,11 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
+-- RENDER LOOP
 RunService.RenderStepped:Connect(function()
 	updateTargets()
-	if _G.HitboxEnabled then
-		applyHitbox()
-	end
-	if espEnabled then
-		updateESP()
-	end
+	if _G.HitboxEnabled then applyHitbox() end
+	if espEnabled then updateESP() end
 end)
 
 Players.PlayerAdded:Connect(function(plr)
@@ -896,12 +1025,12 @@ Players.PlayerAdded:Connect(function(plr)
 		task.wait(0.6)
 		if _G.HitboxEnabled then
 			local sizeNum = tonumber(sizeBox.Text) or 8
-			local size = math.clamp(sizeNum, 1, 10)
-			local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+			local size    = math.clamp(sizeNum, 1, 10)
+			local hrp     = plr.Character:FindFirstChild("HumanoidRootPart")
 			if hrp then
-				hrp.Size = Vector3.new(size, size, size)
+				hrp.Size        = Vector3.new(size, size, size)
 				hrp.Transparency = 1
-				hrp.CanCollide = false
+				hrp.CanCollide  = false
 			end
 		end
 	end)
@@ -909,20 +1038,20 @@ end)
 
 LocalPlayer.CharacterAdded:Connect(function()
 	task.wait(0.6)
-	if speedWalkEnabled then
-		applyWalkSpeed()
-	end
+	if speedWalkEnabled then applyWalkSpeed() end
 end)
 
+-- M KEY TOGGLE
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	if input.KeyCode == Enum.KeyCode.M then
-		if mainFrame.Visible then
-			fadeGuiOut()
-		else
-			fadeGuiIn()
-		end
+		local snd = Instance.new("Sound")
+		snd.SoundId = "rbxassetid://4590662766"
+		snd.Volume = 3
+		snd.Parent = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or workspace
+		snd:Play()
+		game:GetService("Debris"):AddItem(snd, 3)
+		animateToggleBtn()
+		if mainFrame.Visible then fadeGuiOut() else fadeGuiIn() end
 	end
 end)
-
-fadeGuiIn()
