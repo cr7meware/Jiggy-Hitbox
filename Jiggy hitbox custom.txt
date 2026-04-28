@@ -492,7 +492,7 @@ local bottomLabel = Instance.new("TextLabel")
 bottomLabel.Size             = UDim2.new(0, 260, 0, 28)
 bottomLabel.Position         = UDim2.new(0, -53, 1, -45)
 bottomLabel.BackgroundTransparency = 1
-bottomLabel.Text             = " JIGGY ZURA"
+bottomLabel.Text             = " JIGGY  ZURA"
 bottomLabel.TextColor3       = Color3.new(0, 0, 0)
 bottomLabel.Font             = Enum.Font.Arcade
 bottomLabel.TextSize         = 24
@@ -1054,4 +1054,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		animateToggleBtn()
 		if mainFrame.Visible then fadeGuiOut() else fadeGuiIn() end
 	end
-end)
+end)	
